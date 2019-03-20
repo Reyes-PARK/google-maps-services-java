@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2018 Google Inc. All rights reserved.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
@@ -15,32 +15,39 @@
 
 package com.google.maps.model;
 
+import com.google.maps.internal.StringJoin;
 import java.io.Serializable;
 
-/** A speed limit result from the Roads API. */
-public class SpeedLimit implements Serializable {
-
+public class Size implements StringJoin.UrlValue, Serializable {
   private static final long serialVersionUID = 1L;
-  /**
-   * A unique identifier for a place. All placeIds returned by the Roads API will correspond to road
-   * segments.
-   */
-  public String placeId;
+
+  /** The width of this Size. */
+  public int width;
+
+  /** The height of this Size. */
+  public int height;
 
   /**
-   * The speed limit for that road segment, specified in kilometers per hour.
+   * Constructs a Size with a height/width pair.
    *
-   * <p>To obtain the speed in miles per hour, use {@link #speedLimitMph()}.
+   * @param height The height of this Size.
+   * @param width The width of this Size.
    */
-  public double speedLimit;
-
-  /** @return Returns the speed limit in miles per hour (MPH). */
-  public long speedLimitMph() {
-    return Math.round(speedLimit * 0.621371);
+  public Size(int width, int height) {
+    this.width = width;
+    this.height = height;
   }
+
+  /** Serialization constructor. */
+  public Size() {}
 
   @Override
   public String toString() {
-    return String.format("[%.0f km/h, placeId=%s]", speedLimit, placeId);
+    return toUrlValue();
+  }
+
+  @Override
+  public String toUrlValue() {
+    return String.format("%dx%d", width, height);
   }
 }

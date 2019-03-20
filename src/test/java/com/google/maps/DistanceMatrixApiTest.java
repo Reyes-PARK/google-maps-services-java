@@ -17,6 +17,7 @@ package com.google.maps;
 
 import static com.google.maps.TestUtils.retrieveBody;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import com.google.maps.DirectionsApi.RouteRestriction;
 import com.google.maps.model.DistanceMatrix;
@@ -25,8 +26,10 @@ import com.google.maps.model.LatLng;
 import com.google.maps.model.TrafficModel;
 import com.google.maps.model.TravelMode;
 import com.google.maps.model.Unit;
-import org.apache.commons.lang.StringUtils;
-import org.joda.time.DateTime;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Arrays;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -74,7 +77,11 @@ public class DistanceMatrixApiTest {
       DistanceMatrix matrix =
           DistanceMatrixApi.getDistanceMatrix(sc.context, origins, destinations).await();
 
-      // Rows length will match the number of origin elements, regardless of whether they're routable.
+      assertNotNull(matrix.toString());
+      assertNotNull(Arrays.toString(matrix.rows));
+
+      // Rows length will match the number of origin elements, regardless of whether they're
+      // routable.
       assertEquals(8, matrix.rows.length);
       assertEquals(5, matrix.rows[0].elements.length);
       assertEquals(DistanceMatrixElementStatus.OK, matrix.rows[0].elements[0].status);
@@ -126,7 +133,8 @@ public class DistanceMatrixApiTest {
           .language("en-AU")
           .avoid(RouteRestriction.TOLLS)
           .units(Unit.IMPERIAL)
-          .departureTime(new DateTime().plusMinutes(2)) // this is ignored when an API key is used
+          .departureTime(
+              Instant.now().plus(Duration.ofMinutes(2))) // this is ignored when an API key is used
           .await();
 
       sc.assertParamValue(StringUtils.join(origins, "|"), "origins");
@@ -195,7 +203,7 @@ public class DistanceMatrixApiTest {
           .destinations("San Francisco International Airport, San Francisco, CA")
           .mode(TravelMode.DRIVING)
           .trafficModel(TrafficModel.PESSIMISTIC)
-          .departureTime(new DateTime(System.currentTimeMillis() + ONE_HOUR_MILLIS))
+          .departureTime(Instant.ofEpochMilli(System.currentTimeMillis() + ONE_HOUR_MILLIS))
           .await();
 
       sc.assertParamValue("Fisherman's Wharf, San Francisco", "origins");

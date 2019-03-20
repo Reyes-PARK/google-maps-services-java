@@ -16,7 +16,7 @@
 package com.google.maps.model;
 
 import java.io.Serializable;
-import org.joda.time.DateTime;
+import java.time.ZonedDateTime;
 
 /**
  * Transit directions return additional information that is not relevant for other modes of
@@ -36,10 +36,10 @@ public class TransitDetails implements Serializable {
   public StopDetails departureStop;
 
   /** The arrival time for this leg of the journey. */
-  public DateTime arrivalTime;
+  public ZonedDateTime arrivalTime;
 
   /** The departure time for this leg of the journey. */
-  public DateTime departureTime;
+  public ZonedDateTime departureTime;
 
   /**
    * The direction in which to travel on this line, as it is marked on the vehicle or at the
@@ -62,4 +62,22 @@ public class TransitDetails implements Serializable {
 
   /** Information about the transit line used in this step. */
   public TransitLine line;
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("[");
+    sb.append(departureStop).append(" at ").append(departureTime);
+    sb.append(" -> ");
+    sb.append(arrivalStop).append(" at ").append(arrivalTime);
+    if (headsign != null) {
+      sb.append(" (").append(headsign).append(" )");
+    }
+    if (line != null) {
+      sb.append(" on ").append(line);
+    }
+    sb.append(", ").append(numStops).append(" stops");
+    sb.append(", headway=").append(headway).append(" s");
+    sb.append("]");
+    return sb.toString();
+  }
 }

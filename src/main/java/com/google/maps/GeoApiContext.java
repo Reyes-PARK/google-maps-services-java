@@ -27,6 +27,8 @@ import java.net.Proxy;
 import java.net.URLEncoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -34,6 +36,15 @@ import java.util.concurrent.TimeUnit;
  * The entry point for making requests against the Google Geo APIs.
  *
  * <p>Construct this object by using the enclosed {@link GeoApiContext.Builder}.
+ *
+ * <h3>GeoApiContexts should be shared</h3>
+ *
+ * GeoApiContext works best when you create a single GeoApiContext instance, or one per API key, and
+ * reuse it for all your Google Geo API queries. This is because each GeoApiContext manages its own
+ * thread pool, back-end client, and other resources.
+ *
+ * <p>When you are finished with a GeoApiContext object, you must call {@link #shutdown()} on it to
+ * release its resources.
  */
 public class GeoApiContext {
 
@@ -109,41 +120,48 @@ public class GeoApiContext {
     /** Builder pattern for {@code GeoApiContext.RequestHandler}. */
     interface Builder {
 
-      void connectTimeout(long timeout, TimeUnit unit);
+      Builder connectTimeout(long timeout, TimeUnit unit);
 
-      void readTimeout(long timeout, TimeUnit unit);
+      Builder readTimeout(long timeout, TimeUnit unit);
 
-      void writeTimeout(long timeout, TimeUnit unit);
+      Builder writeTimeout(long timeout, TimeUnit unit);
 
-      void queriesPerSecond(int maxQps);
+      Builder queriesPerSecond(int maxQps);
 
-      void proxy(Proxy proxy);
+      Builder proxy(Proxy proxy);
 
-      void proxyAuthentication(String proxyUserName, String proxyUserPassword);
+      Builder proxyAuthentication(String proxyUserName, String proxyUserPassword);
 
       RequestHandler build();
     }
   }
 
+  /**
+   * Shut down this GeoApiContext instance, reclaiming resources. After shutdown() has been called,
+   * no further queries may be done against this instance.
+   */
   public void shutdown() {
     requestHandler.shutdown();
   }
 
   <T, R extends ApiResponse<T>> PendingResult<T> get(
-      ApiConfig config, Class<? extends R> clazz, Map<String, String> params) {
+      ApiConfig config, Class<? extends R> clazz, Map<String, List<String>> params) {
     if (channel != null && !channel.isEmpty() && !params.containsKey("channel")) {
-      params.put("channel", channel);
+      params.put("channel", Collections.singletonList(channel));
     }
 
     StringBuilder query = new StringBuilder();
 
-    for (Map.Entry<String, String> param : params.entrySet()) {
-      query.append('&').append(param.getKey()).append("=");
-      try {
-        query.append(URLEncoder.encode(param.getValue(), "UTF-8"));
-      } catch (UnsupportedEncodingException e) {
-        // This should never happen. UTF-8 support is required for every Java implementation.
-        throw new IllegalStateException(e);
+    for (Map.Entry<String, List<String>> param : params.entrySet()) {
+      List<String> values = param.getValue();
+      for (String value : values) {
+        query.append('&').append(param.getKey()).append("=");
+        try {
+          query.append(URLEncoder.encode(value, "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+          // This should never happen. UTF-8 support is required for every Java implementation.
+          throw new IllegalStateException(e);
+        }
       }
     }
 
@@ -165,16 +183,15 @@ public class GeoApiContext {
     StringBuilder query = new StringBuilder();
 
     boolean channelSet = false;
-    for (int i = 0; i < params.length; i++) {
+    for (int i = 0; i < params.length; i += 2) {
       if (params[i].equals("channel")) {
         channelSet = true;
       }
       query.append('&').append(params[i]).append('=');
-      i++;
 
       // URL-encode the parameter.
       try {
-        query.append(URLEncoder.encode(params[i], "UTF-8"));
+        query.append(URLEncoder.encode(params[i + 1], "UTF-8"));
       } catch (UnsupportedEncodingException e) {
         // This should never happen. UTF-8 support is required for every Java implementation.
         throw new IllegalStateException(e);
@@ -197,7 +214,7 @@ public class GeoApiContext {
   }
 
   <T, R extends ApiResponse<T>> PendingResult<T> post(
-      ApiConfig config, Class<? extends R> clazz, Map<String, String> params) {
+      ApiConfig config, Class<? extends R> clazz, Map<String, List<String>> params) {
 
     checkContext(config.supportsClientId);
 
@@ -221,7 +238,7 @@ public class GeoApiContext {
     return requestHandler.handlePost(
         hostName,
         url.toString(),
-        params.get("_payload"),
+        params.get("_payload").get(0),
         USER_AGENT,
         clazz,
         config.fieldNamingPolicy,
@@ -321,14 +338,28 @@ public class GeoApiContext {
     }
 
     /**
-     * Overrides the base URL of the API endpoint. Useful only for testing.
+     * Overrides the base URL of the API endpoint. Useful for testing or certain international usage
+     * scenarios.
      *
      * @param baseUrl The URL to use, without a trailing slash, e.g. https://maps.googleapis.com
      * @return Returns this builder for call chaining.
      */
-    Builder baseUrlForTesting(String baseUrl) {
+    Builder baseUrlOverride(String baseUrl) {
       baseUrlOverride = baseUrl;
       return this;
+    }
+
+    /**
+     * Older name for {@link #baseUrlOverride(String)}. This was used back when testing was the only
+     * use case foreseen for this.
+     *
+     * @deprecated Use baseUrlOverride(String) instead.
+     * @param baseUrl The URL to use, without a trailing slash, e.g. https://maps.googleapis.com
+     * @return Returns this builder for call chaining.
+     */
+    @Deprecated
+    Builder baseUrlForTesting(String baseUrl) {
+      return baseUrlOverride(baseUrl);
     }
 
     /**

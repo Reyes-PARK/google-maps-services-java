@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2018 Google Inc. All rights reserved.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
@@ -13,14 +13,22 @@
  * permissions and limitations under the License.
  */
 
-package com.google.maps.errors;
+package com.google.maps;
 
-/** Indicates that the requesting account has exceeded its daily quota. */
-public class OverDailyLimitException extends ApiException {
+import com.google.maps.model.Size;
 
-  private static final long serialVersionUID = 9172790459877314621L;
+public class StaticMapsApi {
 
-  public OverDailyLimitException(String errorMessage) {
-    super(errorMessage);
+  private StaticMapsApi() {}
+
+  /**
+   * Create a new {@code StaticMapRequest}.
+   *
+   * @param context The {@code GeoApiContext} to make this request through.
+   * @param size The size of the static map.
+   * @return Returns a new {@code StaticMapRequest} with configured size.
+   */
+  public static StaticMapsRequest newRequest(GeoApiContext context, Size size) {
+    return new StaticMapsRequest(context).size(size);
   }
 }

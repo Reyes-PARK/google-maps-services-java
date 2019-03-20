@@ -20,8 +20,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.maps.GeolocationApi;
+import com.google.maps.ImageResult;
 import com.google.maps.PendingResult;
-import com.google.maps.PhotoRequest;
 import com.google.maps.errors.ApiException;
 import com.google.maps.model.AddressComponentType;
 import com.google.maps.model.AddressType;
@@ -31,11 +31,13 @@ import com.google.maps.model.Fare;
 import com.google.maps.model.LatLng;
 import com.google.maps.model.LocationType;
 import com.google.maps.model.OpeningHours.Period.OpenClose.DayOfWeek;
-import com.google.maps.model.PhotoResult;
 import com.google.maps.model.PlaceDetails.Review.AspectRating.RatingType;
 import com.google.maps.model.PriceLevel;
 import com.google.maps.model.TravelMode;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -46,9 +48,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.joda.time.DateTime;
-import org.joda.time.Instant;
-import org.joda.time.LocalTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +153,7 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
       }
     }
 
-    final BlockingQueue<QueuedResponse> waiter = new ArrayBlockingQueue<QueuedResponse>(1);
+    final BlockingQueue<QueuedResponse> waiter = new ArrayBlockingQueue<>(1);
     final OkHttpPendingResult<T, R> parent = this;
 
     // This callback will be called on another thread, handled by the RateLimitExecutorService.
@@ -216,6 +215,9 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
   private T parseResponse(OkHttpPendingResult<T, R> request, Response response)
       throws ApiException, InterruptedException, IOException {
     if (shouldRetry(response)) {
+      // since we are retrying the request we must close the response
+      response.close();
+
       // Retry is a blocking method, but that's OK. If we're here, we're either in an await()
       // call, which is blocking anyway, or we're handling a callback in a separate thread.
       return request.retry();
@@ -228,21 +230,17 @@ public class OkHttpPendingResult<T, R extends ApiResponse<T>>
     R resp;
     String contentType = response.header("Content-Type");
 
-    // Places Photo API special case
     if (contentType != null
         && contentType.startsWith("image")
-        && responseClass == PhotoRequest.Response.class
+        && responseClass == ImageResult.Response.class
         && response.code() == 200) {
-      // Photo API response is just a raw image byte array.
-      PhotoResult result = new PhotoResult();
-      result.contentType = contentType;
-      result.imageData = bytes;
+      ImageResult result = new ImageResult(contentType, bytes);
       return (T) result;
     }
 
     Gson gson =
         new GsonBuilder()
-            .registerTypeAdapter(DateTime.class, new DateTimeAdapter())
+            .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
             .registerTypeAdapter(Distance.class, new DistanceAdapter())
             .registerTypeAdapter(Duration.class, new DurationAdapter())
             .registerTypeAdapter(Fare.class, new FareAdapter())

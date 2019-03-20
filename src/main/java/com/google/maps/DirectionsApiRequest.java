@@ -16,6 +16,7 @@
 package com.google.maps;
 
 import static com.google.maps.internal.StringJoin.join;
+import static java.util.Objects.requireNonNull;
 
 import com.google.maps.model.DirectionsResult;
 import com.google.maps.model.LatLng;
@@ -24,7 +25,7 @@ import com.google.maps.model.TransitMode;
 import com.google.maps.model.TransitRoutingPreference;
 import com.google.maps.model.TravelMode;
 import com.google.maps.model.Unit;
-import org.joda.time.ReadableInstant;
+import java.time.Instant;
 
 /** Request for the Directions API. */
 public class DirectionsApiRequest
@@ -35,7 +36,7 @@ public class DirectionsApiRequest
   }
 
   protected boolean optimizeWaypoints;
-  protected String[] waypoints;
+  protected Waypoint[] waypoints;
 
   @Override
   protected void validateRequest() {
@@ -45,8 +46,7 @@ public class DirectionsApiRequest
     if (!params().containsKey("destination")) {
       throw new IllegalArgumentException("Request must contain 'destination'");
     }
-    if (TravelMode.TRANSIT.toString().equals(params().get("mode"))
-        && (params().containsKey("arrival_time") && params().containsKey("departure_time"))) {
+    if (params().containsKey("arrival_time") && params().containsKey("departure_time")) {
       throw new IllegalArgumentException(
           "Transit request must not contain both a departureTime and an arrivalTime");
     }
@@ -58,8 +58,8 @@ public class DirectionsApiRequest
 
   /**
    * The address or textual latitude/longitude value from which you wish to calculate directions. If
-   * you pass an address as a string, the Directions service will geocode the string and convert it
-   * to a latitude/longitude coordinate to calculate directions. If you pass coordinates, ensure
+   * you pass an address as a location, the Directions service will geocode the location and convert
+   * it to a latitude/longitude coordinate to calculate directions. If you pass coordinates, ensure
    * that no space exists between the latitude and longitude values.
    *
    * @param origin The starting location for the Directions request.
@@ -71,8 +71,8 @@ public class DirectionsApiRequest
 
   /**
    * The address or textual latitude/longitude value from which you wish to calculate directions. If
-   * you pass an address as a string, the Directions service will geocode the string and convert it
-   * to a latitude/longitude coordinate to calculate directions. If you pass coordinates, ensure
+   * you pass an address as a location, the Directions service will geocode the location and convert
+   * it to a latitude/longitude coordinate to calculate directions. If you pass coordinates, ensure
    * that no space exists between the latitude and longitude values.
    *
    * @param destination The ending location for the Directions request.
@@ -80,6 +80,26 @@ public class DirectionsApiRequest
    */
   public DirectionsApiRequest destination(String destination) {
     return param("destination", destination);
+  }
+
+  /**
+   * The Place ID value from which you wish to calculate directions.
+   *
+   * @param originPlaceId The starting location Place ID for the Directions request.
+   * @return Returns this {@code DirectionsApiRequest} for call chaining.
+   */
+  public DirectionsApiRequest originPlaceId(String originPlaceId) {
+    return param("origin", prefixPlaceId(originPlaceId));
+  }
+
+  /**
+   * The Place ID value from which you wish to calculate directions.
+   *
+   * @param destinationPlaceId The ending location Place ID for the Directions request.
+   * @return Returns this {@code DirectionsApiRequest} for call chaining.
+   */
+  public DirectionsApiRequest destinationPlaceId(String destinationPlaceId) {
+    return param("destination", prefixPlaceId(destinationPlaceId));
   }
 
   /**
@@ -149,20 +169,32 @@ public class DirectionsApiRequest
    * @param time The arrival time to calculate directions for.
    * @return Returns this {@code DirectionsApiRequest} for call chaining.
    */
-  public DirectionsApiRequest arrivalTime(ReadableInstant time) {
-    return param("arrival_time", Long.toString(time.getMillis() / 1000L));
+  public DirectionsApiRequest arrivalTime(Instant time) {
+    return param("arrival_time", Long.toString(time.toEpochMilli() / 1000L));
   }
 
   /**
    * Set the departure time for a transit or driving directions request. If both departure time and
    * traffic model are not provided, then "now" is assumed. If traffic model is supplied, then
-   * departure time must be specified.
+   * departure time must be specified. Duration in traffic will only be returned if the departure
+   * time is specified.
    *
    * @param time The departure time to calculate directions for.
    * @return Returns this {@code DirectionsApiRequest} for call chaining.
    */
-  public DirectionsApiRequest departureTime(ReadableInstant time) {
-    return param("departure_time", Long.toString(time.getMillis() / 1000L));
+  public DirectionsApiRequest departureTime(Instant time) {
+    return param("departure_time", Long.toString(time.toEpochMilli() / 1000L));
+  }
+
+  /**
+   * Set the departure time for a transit or driving directions request as the current time. If
+   * traffic model is supplied, then departure time must be specified. Duration in traffic will only
+   * be returned if the departure time is specified.
+   *
+   * @return Returns this {@code DirectionsApiRequest} for call chaining.
+   */
+  public DirectionsApiRequest departureTimeNow() {
+    return param("departure_time", "now");
   }
 
   /**
@@ -178,33 +210,73 @@ public class DirectionsApiRequest
    * @param waypoints The waypoints to add to this directions request.
    * @return Returns this {@code DirectionsApiRequest} for call chaining.
    */
-  public DirectionsApiRequest waypoints(String... waypoints) {
-    this.waypoints = waypoints;
+  public DirectionsApiRequest waypoints(Waypoint... waypoints) {
     if (waypoints == null || waypoints.length == 0) {
+      this.waypoints = new Waypoint[0];
+      param("waypoints", "");
       return this;
-    } else if (waypoints.length == 1) {
-      return param("waypoints", waypoints[0]);
     } else {
-      return param("waypoints", (optimizeWaypoints ? "optimize:true|" : "") + join('|', waypoints));
+      this.waypoints = waypoints;
+      String[] waypointStrs = new String[waypoints.length];
+      for (int i = 0; i < waypoints.length; i++) {
+        waypointStrs[i] = waypoints[i].toString();
+      }
+      param("waypoints", (optimizeWaypoints ? "optimize:true|" : "") + join('|', waypointStrs));
+      return this;
     }
+  }
+
+  /**
+   * Specifies the list of waypoints as String addresses. If any of the Strings are Place IDs, you
+   * must prefix them with {@code place_id:}.
+   *
+   * <p>See {@link #prefixPlaceId(String)}.
+   *
+   * <p>See {@link #waypoints(Waypoint...)}.
+   *
+   * @param waypoints The waypoints to add to this directions request.
+   * @return Returns this {@code DirectionsApiRequest} for call chaining.
+   */
+  public DirectionsApiRequest waypoints(String... waypoints) {
+    Waypoint[] objWaypoints = new Waypoint[waypoints.length];
+    for (int i = 0; i < waypoints.length; i++) {
+      objWaypoints[i] = new Waypoint(waypoints[i]);
+    }
+    return waypoints(objWaypoints);
+  }
+
+  /**
+   * Specifies the list of waypoints as Plade ID Strings, prefixing them as required by the API.
+   *
+   * <p>See {@link #prefixPlaceId(String)}.
+   *
+   * <p>See {@link #waypoints(Waypoint...)}.
+   *
+   * @param waypoints The waypoints to add to this directions request.
+   * @return Returns this {@code DirectionsApiRequest} for call chaining.
+   */
+  public DirectionsApiRequest waypointsFromPlaceIds(String... waypoints) {
+    Waypoint[] objWaypoints = new Waypoint[waypoints.length];
+    for (int i = 0; i < waypoints.length; i++) {
+      objWaypoints[i] = new Waypoint(prefixPlaceId(waypoints[i]));
+    }
+    return waypoints(objWaypoints);
   }
 
   /**
    * The list of waypoints as latitude/longitude locations.
    *
+   * <p>See {@link #waypoints(Waypoint...)}.
+   *
    * @param waypoints The waypoints to add to this directions request.
    * @return Returns this {@code DirectionsApiRequest} for call chaining.
    */
   public DirectionsApiRequest waypoints(LatLng... waypoints) {
-    if (waypoints == null) {
-      return this;
+    Waypoint[] objWaypoints = new Waypoint[waypoints.length];
+    for (int i = 0; i < waypoints.length; i++) {
+      objWaypoints[i] = new Waypoint(waypoints[i]);
     }
-    int length = waypoints.length;
-    String[] waypointStrings = new String[length];
-    for (int i = 0; i < length; i++) {
-      waypointStrings[i] = waypoints[i].toString();
-    }
-    return waypoints(waypointStrings);
+    return waypoints(objWaypoints);
   }
 
   /**
@@ -270,5 +342,78 @@ public class DirectionsApiRequest
    */
   public DirectionsApiRequest trafficModel(TrafficModel trafficModel) {
     return param("traffic_model", trafficModel);
+  }
+
+  /**
+   * Helper method for prefixing a Place ID, as specified by the API.
+   *
+   * @param placeId The Place ID to be prefixed.
+   * @return Returns the Place ID prefixed with {@code place_id:}.
+   */
+  public String prefixPlaceId(String placeId) {
+    return "place_id:" + placeId;
+  }
+
+  public static class Waypoint {
+    /** The location of this waypoint, expressed as an API-recognized location. */
+    private String location;
+    /** Whether this waypoint is a stopover waypoint. */
+    private boolean isStopover;
+
+    /**
+     * Constructs a stopover Waypoint using a String address.
+     *
+     * @param location Any address or location recognized by the Google Maps API.
+     */
+    public Waypoint(String location) {
+      this(location, true);
+    }
+
+    /**
+     * Constructs a Waypoint using a String address.
+     *
+     * @param location Any address or location recognized by the Google Maps API.
+     * @param isStopover Whether this waypoint is a stopover waypoint.
+     */
+    public Waypoint(String location, boolean isStopover) {
+      requireNonNull(location, "address may not be null");
+      this.location = location;
+      this.isStopover = isStopover;
+    }
+
+    /**
+     * Constructs a stopover Waypoint using a Latlng location.
+     *
+     * @param location The LatLng coordinates of this waypoint.
+     */
+    public Waypoint(LatLng location) {
+      this(location, true);
+    }
+
+    /**
+     * Constructs a Waypoint using a LatLng location.
+     *
+     * @param location The LatLng coordinates of this waypoint.
+     * @param isStopover Whether this waypoint is a stopover waypoint.
+     */
+    public Waypoint(LatLng location, boolean isStopover) {
+      requireNonNull(location, "location may not be null");
+      this.location = location.toString();
+      this.isStopover = isStopover;
+    }
+
+    /**
+     * Gets the String representation of this Waypoint, as an API request parameter fragment.
+     *
+     * @return The HTTP parameter fragment representing this waypoint.
+     */
+    @Override
+    public String toString() {
+      if (isStopover) {
+        return location;
+      } else {
+        return "via:" + location;
+      }
+    }
   }
 }

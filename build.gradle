@@ -1,26 +1,30 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.0'
-    }
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2'
+  }
 }
 
+
 plugins {
-    id 'com.github.sherter.google-java-format' version '0.6'
+    id 'com.github.ben-manes.versions' version '0.21.0'
+    id 'com.github.sherter.google-java-format' version '0.8'
 }
 
 apply plugin: 'java'
+apply plugin: 'java-library'
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'jacoco'
 apply plugin: 'com.github.kt3k.coveralls'
+apply plugin: 'com.github.sherter.google-java-format'
 
 group = 'com.google.maps'
-sourceCompatibility = 1.7
+sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
@@ -42,23 +46,18 @@ artifacts {
     archives sourcesJar
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    compile 'com.google.code.gson:gson:2.8.1'
-    compile 'com.squareup.okhttp3:okhttp:3.8.1'
-    compile 'joda-time:joda-time:2.9.9'
-    compileOnly 'com.google.appengine:appengine-api-1.0-sdk:1.9.54'
-    compile 'org.slf4j:slf4j-api:1.7.25'
-    testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:1.10.19'
-    testCompile 'com.squareup.okhttp3:mockwebserver:3.8.1'
-    testCompile 'org.apache.httpcomponents:httpclient:4.5.3'
-    testCompile 'org.slf4j:slf4j-simple:1.7.25'
-    testCompile 'commons-lang:commons-lang:2.6'
-    testCompile 'org.json:json:20170516'
+    compileOnly 'com.google.appengine:appengine-api-1.0-sdk:1.9.71'
+    api 'com.squareup.okhttp3:okhttp:3.14.0'
+    api 'com.google.code.gson:gson:2.8.5'
+    implementation 'org.slf4j:slf4j-api:1.7.25'
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.mockito:mockito-core:2.25.1'
+    testImplementation 'com.squareup.okhttp3:mockwebserver:3.14.0'
+    testImplementation 'org.apache.httpcomponents:httpclient:4.5.7'
+    testImplementation 'org.slf4j:slf4j-simple:1.7.25'
+    testImplementation 'org.apache.commons:commons-lang3:3.8.1'
+    testImplementation 'org.json:json:20180813'
 }
 
 task updateVersion(type: Copy) {
@@ -85,6 +84,14 @@ tasks.withType(Test) {
 
 javadoc {
     exclude '**/internal/**'
+    def currentJavaVersion = org.gradle.api.JavaVersion.current()
+    if (currentJavaVersion.compareTo(org.gradle.api.JavaVersion.VERSION_1_9) > 0) {
+      options.addBooleanOption('html4', true)
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.2" // non-default version 0.8.2 required for OpenJDK 11 compatibility
 }
 
 jacocoTestReport {

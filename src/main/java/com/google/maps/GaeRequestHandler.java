@@ -15,6 +15,8 @@
 
 package com.google.maps;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import com.google.appengine.api.urlfetch.FetchOptions;
 import com.google.appengine.api.urlfetch.HTTPHeader;
 import com.google.appengine.api.urlfetch.HTTPMethod;
@@ -63,7 +65,7 @@ public class GaeRequestHandler implements GeoApiContext.RequestHandler {
       throw (new RuntimeException(e));
     }
 
-    return new GaePendingResult<T, R>(
+    return new GaePendingResult<>(
         req, client, clazz, fieldNamingPolicy, errorTimeout, maxRetries, exceptionsAllowedToRetry);
   }
 
@@ -83,57 +85,51 @@ public class GaeRequestHandler implements GeoApiContext.RequestHandler {
     try {
       req = new HTTPRequest(new URL(hostName + url), HTTPMethod.POST, fetchOptions);
       req.setHeader(new HTTPHeader("Content-Type", "application/json; charset=utf-8"));
-      req.setPayload(payload.getBytes());
+      req.setPayload(payload.getBytes(UTF_8));
     } catch (MalformedURLException e) {
       LOG.error("Request: {}{}", hostName, url, e);
       throw (new RuntimeException(e));
     }
 
-    return new GaePendingResult<T, R>(
+    return new GaePendingResult<>(
         req, client, clazz, fieldNamingPolicy, errorTimeout, maxRetries, exceptionsAllowedToRetry);
   }
 
   @Override
   public void shutdown() {
-    //do nothing
+    // do nothing
   }
 
   /** Builder strategy for constructing {@code GaeRequestHandler}. */
   public static class Builder implements GeoApiContext.RequestHandler.Builder {
 
     @Override
-    public void connectTimeout(long timeout, TimeUnit unit) {
-      // TODO: Investigate if GAE URL Fetch Service supports setting connection timeout
+    public Builder connectTimeout(long timeout, TimeUnit unit) {
       throw new RuntimeException("connectTimeout not implemented for Google App Engine");
     }
 
     @Override
-    public void readTimeout(long timeout, TimeUnit unit) {
-      // TODO: Investigate if GAE URL Fetch Service supports setting read timeout
+    public Builder readTimeout(long timeout, TimeUnit unit) {
       throw new RuntimeException("readTimeout not implemented for Google App Engine");
     }
 
     @Override
-    public void writeTimeout(long timeout, TimeUnit unit) {
-      // TODO: Investigate if GAE URL Fetch Service supports setting write timeout
+    public Builder writeTimeout(long timeout, TimeUnit unit) {
       throw new RuntimeException("writeTimeout not implemented for Google App Engine");
     }
 
     @Override
-    public void queriesPerSecond(int maxQps) {
-      // TODO: Investigate if GAE URL Fetch Service supports setting qps
+    public Builder queriesPerSecond(int maxQps) {
       throw new RuntimeException("queriesPerSecond not implemented for Google App Engine");
     }
 
     @Override
-    public void proxy(Proxy proxy) {
-      // TODO: Investigate if GAE URL Fetch Service supports setting proxy
+    public Builder proxy(Proxy proxy) {
       throw new RuntimeException("setProxy not implemented for Google App Engine");
     }
 
     @Override
-    public void proxyAuthentication(String proxyUserName, String proxyUserPassword) {
-      // TODO: Investigate if GAE URL Fetch Service supports setting proxy authentication
+    public Builder proxyAuthentication(String proxyUserName, String proxyUserPassword) {
       throw new RuntimeException("setProxyAuthentication not implemented for Google App Engine");
     }
 

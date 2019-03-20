@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Google Inc. All rights reserved.
+ * Copyright 2018 Google Inc. All rights reserved.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
@@ -15,32 +15,22 @@
 
 package com.google.maps.model;
 
-import com.google.maps.internal.StringJoin;
+/** A Plus Code encoded location reference. */
+public class PlusCode {
+  /** The global Plus Code identifier. */
+  public String globalCode;
 
-/**
- * Used by the Places API to restrict the autocomplete results to places matching the specified
- * type.
- */
-public enum PlaceAutocompleteType implements StringJoin.UrlValue {
-  GEOCODE("geocode"),
-  ADDRESS("address"),
-  ESTABLISHMENT("establishment"),
-  REGIONS("(regions)"),
-  CITIES("(cities)");
-
-  PlaceAutocompleteType(final String placeType) {
-    this.placeType = placeType;
-  }
-
-  private final String placeType;
-
-  @Override
-  public String toUrlValue() {
-    return placeType;
-  }
+  /** The compound Plus Code identifier. May be null for locations in remote areas. */
+  public String compoundCode;
 
   @Override
   public String toString() {
-    return placeType;
+    StringBuilder sb = new StringBuilder("[PlusCode: ");
+    sb.append(globalCode);
+    if (compoundCode != null) {
+      sb.append(", compoundCode=").append(compoundCode);
+    }
+    sb.append("]");
+    return sb.toString();
   }
 }

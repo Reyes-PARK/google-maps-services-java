@@ -28,7 +28,9 @@ import com.google.maps.internal.ApiConfig;
 import com.google.maps.internal.ApiResponse;
 import com.google.maps.model.GeocodingResult;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import okhttp3.Headers;
@@ -53,6 +55,7 @@ public class GeoApiContextTest {
   }
 
   @After
+  @SuppressWarnings("CatchAndPrintStackTrace")
   public void Teardown() {
     try {
       server.shutdown();
@@ -62,17 +65,17 @@ public class GeoApiContextTest {
   }
 
   private void setMockBaseUrl() {
-    builder.baseUrlForTesting("http://127.0.0.1:" + server.getPort());
+    builder.baseUrlOverride("http://127.0.0.1:" + server.getPort());
   }
 
   @SuppressWarnings("unchecked")
   @Test
   public void testGetIncludesDefaultUserAgent() throws Exception {
     // Set up a mock request
-    ApiResponse fakeResponse = mock(ApiResponse.class);
+    ApiResponse<Object> fakeResponse = mock(ApiResponse.class);
     String path = "/";
-    Map<String, String> params = new HashMap<String, String>(1);
-    params.put("key", "value");
+    Map<String, List<String>> params = new HashMap<>();
+    params.put("key", Collections.singletonList("value"));
 
     // Set up the fake web server
     server.enqueue(new MockResponse());
@@ -267,8 +270,8 @@ public class GeoApiContextTest {
 
   @Test
   public void testToggleIfExceptionIsAllowedToRetry() throws Exception {
-    // Enqueue some error responses, although only the first should be used because the response's exception is not
-    // allowed to be retried.
+    // Enqueue some error responses, although only the first should be used because the response's
+    // exception is not allowed to be retried.
     MockResponse overQueryLimitResponse = new MockResponse();
     overQueryLimitResponse.setStatus("HTTP/1.1 400 Internal server error");
     overQueryLimitResponse.setBody(TestUtils.retrieveBody("OverQueryLimitResponse.json"));
@@ -305,7 +308,7 @@ public class GeoApiContextTest {
     assertTrue(
         "Delay thread should start in constructor of RateLimitExecutorService",
         delayThread.isAlive());
-    //this is needed to make sure that delay thread has reached queue.take()
+    // this is needed to make sure that delay thread has reached queue.take()
     delayThread.join(10);
     context.shutdown();
     delayThread.join(10);

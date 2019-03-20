@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Google Inc. All rights reserved.
+ * Copyright 2018 Google Inc. All rights reserved.
  *
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
@@ -17,18 +17,14 @@ package com.google.maps.model;
 
 import java.io.Serializable;
 
-/**
- * Contains the photo for a PhotoReference.
- *
- * <p>Please see <a href="https://developers.google.com/places/web-service/photos">Place Photos</a>
- * for more details.
- */
-public class PhotoResult implements Serializable {
+public class FindPlaceFromText implements Serializable {
 
   private static final long serialVersionUID = 1L;
-  /** The image data from the Photos API call. */
-  public byte[] imageData;
 
-  /** The Content-Type header of the returned result. */
-  public String contentType;
+  public PlacesSearchResult candidates[];
+
+  @Override
+  public String toString() {
+    return String.format("[FindPlaceFromText %d candidates]", candidates.length);
+  }
 }

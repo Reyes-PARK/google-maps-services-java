@@ -19,6 +19,7 @@ APIs:
 - [Distance Matrix API]
 - [Elevation API]
 - [Geocoding API]
+- [Maps Static API]
 - [Places API]
 - [Roads API]
 - [Time Zone API]
@@ -26,10 +27,16 @@ APIs:
 Keep in mind that the same [terms and conditions](https://developers.google.com/maps/terms) apply
 to usage of the APIs when they're accessed through this library.
 
-**Note:** The Java Client for Google Maps Services is for use in server applications. If you're building a
-mobile application, you will need to introduce a proxy server to act as intermediary between your mobile
-application and the [Google Maps API Web Services]. The Java Client for Google Maps Services would make an
-excellent choice as the basis for such a proxy server.
+## Intended usage of this library
+
+The Java Client for Google Maps Services is designed for use in server applications. This library
+is not intended for use inside of an Android app, due to the potential for loss of API keys.
+
+If you are building a mobile application, you will need to introduce a proxy server to act as
+intermediary between your mobile application and the [Google Maps API Web Services]. The Java
+Client for Google Maps Services would make an excellent choice as the basis for such a proxy server.
+
+Please see [Making the most of the Google Maps Web Service APIs] for more detail.
 
 ## Support
 
@@ -46,7 +53,7 @@ contribute, please read [How to Contribute][contrib].
 
 ## Requirements
 
-- Java 1.7 or later.
+- Java 1.8 or later.
 - A Google Maps API key.
 
 ### API keys
@@ -67,6 +74,7 @@ To get an API key:
     - Distance Matrix API
     - Elevation API
     - Geocoding API
+    - Maps Static API
     - Places API
     - Roads API
     - Time Zone API
@@ -97,14 +105,14 @@ when you start using `google-maps-services`.
 
 ```xml
 <dependency>
-    <groupId>com.google.maps</groupId>
-    <artifactId>google-maps-services</artifactId>
-    <version>(insert latest version)</version>
+  <groupId>com.google.maps</groupId>
+  <artifactId>google-maps-services</artifactId>
+  <version>(insert latest version)</version>
 </dependency>
 <dependency>
-    <groupId>org.slf4j</groupId>
-    <artifactId>slf4j-nop</artifactId>
-    <version>1.7.25</version>
+  <groupId>org.slf4j</groupId>
+  <artifactId>slf4j-simple</artifactId>
+  <version>1.7.25</version>
 </dependency>
 ```
 
@@ -116,8 +124,8 @@ repositories {
 }
 
 dependencies {
-    compile 'com.google.maps:google-maps-services:(insert latest version)'
-    compile 'org.slf4j:slf4j-nop:1.7.25'
+    implementation 'com.google.maps:google-maps-services:(insert latest version)'
+    implementation 'org.slf4j:slf4j-simple:1.7.25'
 }
 ```
 
@@ -126,7 +134,7 @@ Maven Central](https://search.maven.org/#search%7Cga%7C1%7Ca%3A%22google-maps-se
 
 ## Developer Documentation
 
-View the [javadoc](https://googlemaps.github.io/google-maps-services-java/v0.2.6/javadoc/).
+View the [javadoc](https://googlemaps.github.io/google-maps-services-java/v0.9.2/javadoc/index.html?overview-summary.html).
 
 Additional documentation for the included web services is available at
 https://developers.google.com/maps/.
@@ -135,6 +143,7 @@ https://developers.google.com/maps/.
 - [Distance Matrix API]
 - [Elevation API]
 - [Geocoding API]
+- [Maps Static API]
 - [Places API]
 - [Roads API]
 - [Time Zone API]
@@ -175,7 +184,7 @@ The `GeoApiContext` is designed to be a [Singleton](https://en.wikipedia.org/wik
 in your application. Please instantiate one on application startup, and continue to use it for the
 life of your application. This will enable proper QPS enforcement across all of your requests.
 
-For more usage examples, check out [the tests](src/test/java/com/google/maps/).
+For more usage examples, check out [the tests](src/test/java/com/google/maps).
 
 ## Features
 
@@ -288,8 +297,10 @@ req.setCallback(new PendingResult.Callback<GeocodingResult[]>() {
 [Distance Matrix API]: https://developers.google.com/maps/documentation/distancematrix
 [Elevation API]: https://developers.google.com/maps/documentation/elevation
 [Geocoding API]: https://developers.google.com/maps/documentation/geocoding
-[Google Maps API Web Services]: https://developers.google.com/maps/documentation/webservices/
+[Google Maps API Web Services]: https://developers.google.com/maps/apis-by-platform#web_service_apis
 [issues]: https://github.com/googlemaps/google-maps-services-java/issues
+[Maps Static API]: https://developers.google.com/maps/documentation/maps-static/
 [Places API]: https://developers.google.com/places/web-service/
 [Time Zone API]: https://developers.google.com/maps/documentation/timezone
 [Roads API]: https://developers.google.com/maps/documentation/roads
+[Making the most of the Google Maps Web Service APIs]: https://maps-apis.googleblog.com/2016/09/making-most-of-google-maps-web-service.html

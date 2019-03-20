@@ -15,6 +15,8 @@
 
 package com.google.maps.internal;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import javax.crypto.Mac;
@@ -42,14 +44,13 @@ public class UrlSigner {
       throw new IllegalArgumentException("Private key is invalid.");
     }
 
-    // TODO(macd): add test
     mac = Mac.getInstance(ALGORITHM_HMAC_SHA1);
     mac.init(new SecretKeySpec(decodedKey.toByteArray(), ALGORITHM_HMAC_SHA1));
   }
 
   /** Generate url safe HmacSHA1 of a path. */
   public String getSignature(String path) {
-    byte[] digest = getMac().doFinal(path.getBytes());
+    byte[] digest = getMac().doFinal(path.getBytes(UTF_8));
     return ByteString.of(digest).base64().replace('+', '-').replace('/', '_');
   }
 

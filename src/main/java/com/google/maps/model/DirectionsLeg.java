@@ -16,7 +16,7 @@
 package com.google.maps.model;
 
 import java.io.Serializable;
-import org.joda.time.DateTime;
+import java.time.ZonedDateTime;
 
 /**
  * A component of a Directions API result.
@@ -58,13 +58,13 @@ public class DirectionsLeg implements Serializable {
    * The estimated time of arrival for this leg. This property is only returned for transit
    * directions.
    */
-  public DateTime arrivalTime;
+  public ZonedDateTime arrivalTime;
 
   /**
    * The estimated time of departure for this leg. The departureTime is only available for transit
    * directions.
    */
-  public DateTime departureTime;
+  public ZonedDateTime departureTime;
 
   /**
    * The latitude/longitude coordinates of the origin of this leg. Because the Directions API
@@ -93,4 +93,26 @@ public class DirectionsLeg implements Serializable {
    * leg.
    */
   public String endAddress;
+
+  @Override
+  public String toString() {
+    StringBuilder sb =
+        new StringBuilder(
+            String.format(
+                "[DirectionsLeg: \"%s\" -> \"%s\" (%s -> %s)",
+                startAddress, endAddress, startLocation, endLocation));
+    if (departureTime != null) {
+      sb.append(", departureTime=").append(departureTime);
+    }
+    if (arrivalTime != null) {
+      sb.append(", arrivalTime=").append(arrivalTime);
+    }
+    if (durationInTraffic != null) {
+      sb.append(", durationInTraffic=").append(durationInTraffic);
+    }
+    sb.append(", duration=").append(duration);
+    sb.append(", distance=").append(distance);
+    sb.append(": ").append(steps.length).append(" steps]");
+    return sb.toString();
+  }
 }

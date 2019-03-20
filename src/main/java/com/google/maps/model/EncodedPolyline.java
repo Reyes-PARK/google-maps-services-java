@@ -31,6 +31,10 @@ public class EncodedPolyline implements Serializable {
 
   private final String points;
 
+  public EncodedPolyline() {
+    this.points = null;
+  }
+
   /**
    * @param encodedPoints A string representation of a path, encoded with the Polyline Algorithm.
    */
@@ -49,5 +53,12 @@ public class EncodedPolyline implements Serializable {
 
   public List<LatLng> decodePath() {
     return PolylineEncoding.decode(points);
+  }
+
+  // Use the encoded point representation; decoding to get an alternate representation for
+  // individual points would be expensive.
+  @Override
+  public String toString() {
+    return String.format("[EncodedPolyline: %s]", points);
   }
 }

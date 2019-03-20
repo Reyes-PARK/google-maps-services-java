@@ -16,12 +16,13 @@
 package com.google.maps;
 
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class TestUtils {
   public static String retrieveBody(String filename) {
     InputStream input = TestUtils.class.getResourceAsStream(filename);
-    try (Scanner s = new java.util.Scanner(input)) {
+    try (Scanner s = new java.util.Scanner(input, StandardCharsets.UTF_8.name())) {
       s.useDelimiter("\\A");
       String body = s.next();
 

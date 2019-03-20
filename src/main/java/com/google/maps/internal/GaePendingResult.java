@@ -24,8 +24,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import com.google.maps.GeolocationApi;
+import com.google.maps.ImageResult;
 import com.google.maps.PendingResult;
-import com.google.maps.PhotoRequest;
 import com.google.maps.errors.ApiException;
 import com.google.maps.errors.UnknownErrorException;
 import com.google.maps.model.AddressComponentType;
@@ -37,19 +37,18 @@ import com.google.maps.model.Fare;
 import com.google.maps.model.LatLng;
 import com.google.maps.model.LocationType;
 import com.google.maps.model.OpeningHours.Period.OpenClose.DayOfWeek;
-import com.google.maps.model.PhotoResult;
 import com.google.maps.model.PlaceDetails.Review.AspectRating.RatingType;
 import com.google.maps.model.PriceLevel;
 import com.google.maps.model.TravelMode;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import org.joda.time.DateTime;
-import org.joda.time.Instant;
-import org.joda.time.LocalTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -157,36 +156,27 @@ public class GaePendingResult<T, R extends ApiResponse<T>> implements PendingRes
       }
     }
 
-    // Places Photo API special case
     if (contentType != null
         && contentType.startsWith("image")
-        && responseClass == PhotoRequest.Response.class
+        && responseClass == ImageResult.Response.class
         && response.getResponseCode() == 200) {
-      // Photo API response is just a raw image byte array.
-      PhotoResult result = new PhotoResult();
-      result.contentType = contentType;
-      result.imageData = bytes;
+      ImageResult result = new ImageResult(contentType, bytes);
       return (T) result;
     }
 
     Gson gson =
         new GsonBuilder()
-            .registerTypeAdapter(DateTime.class, new DateTimeAdapter())
+            .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
             .registerTypeAdapter(Distance.class, new DistanceAdapter())
             .registerTypeAdapter(Duration.class, new DurationAdapter())
             .registerTypeAdapter(Fare.class, new FareAdapter())
             .registerTypeAdapter(LatLng.class, new LatLngAdapter())
             .registerTypeAdapter(
-                AddressComponentType.class,
-                new SafeEnumAdapter<AddressComponentType>(AddressComponentType.UNKNOWN))
-            .registerTypeAdapter(
-                AddressType.class, new SafeEnumAdapter<AddressType>(AddressType.UNKNOWN))
-            .registerTypeAdapter(
-                TravelMode.class, new SafeEnumAdapter<TravelMode>(TravelMode.UNKNOWN))
-            .registerTypeAdapter(
-                LocationType.class, new SafeEnumAdapter<LocationType>(LocationType.UNKNOWN))
-            .registerTypeAdapter(
-                RatingType.class, new SafeEnumAdapter<RatingType>(RatingType.UNKNOWN))
+                AddressComponentType.class, new SafeEnumAdapter<>(AddressComponentType.UNKNOWN))
+            .registerTypeAdapter(AddressType.class, new SafeEnumAdapter<>(AddressType.UNKNOWN))
+            .registerTypeAdapter(TravelMode.class, new SafeEnumAdapter<>(TravelMode.UNKNOWN))
+            .registerTypeAdapter(LocationType.class, new SafeEnumAdapter<>(LocationType.UNKNOWN))
+            .registerTypeAdapter(RatingType.class, new SafeEnumAdapter<>(RatingType.UNKNOWN))
             .registerTypeAdapter(DayOfWeek.class, new DayOfWeekAdapter())
             .registerTypeAdapter(PriceLevel.class, new PriceLevelAdapter())
             .registerTypeAdapter(Instant.class, new InstantAdapter())
